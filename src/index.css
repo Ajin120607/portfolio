@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --neural-cyan: #00F5FF;
+  --plasma-violet: #8A2BE2;
+  --bio-emerald: #00FF9D;
+  --holo-magenta: #FF007F;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #020205;
+  color: #f1f5f9;
+}
+
+body {
+  background-color: #020205;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020205;
+  border-left: 1px solid rgba(0, 245, 255, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00F5FF 0%, #8A2BE2 100%);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #00FF9D 0%, #00F5FF 100%);
+}
+
+/* Translucent Cyber Glass - Crisp & High-Contrast */
+.cyber-glass {
+  background: rgba(10, 12, 24, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cyber-glass-strong {
+  background: rgba(8, 10, 20, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 245, 255, 0.2);
+}
+
+/* Mouse-reactive radial spotlight glow on Bento cards */
+.bento-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.bento-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    550px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(0, 245, 255, 0.11),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bento-spotlight:hover::before {
+  opacity: 1;
+}
+
+/* Ultra-subtle ambient finish (no noisy scanlines) */
+.crt-overlay {
+  display: none;
+}
+
+/* Holographic Text & Gradients */
+.text-holo {
+  background: linear-gradient(135deg, #00F5FF 0%, #9D4EDD 50%, #FF007F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-cyber-gradient {
+  background: linear-gradient(90deg, #FFFFFF 0%, #00F5FF 55%, #00FF9D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hexagonal Clip Path for 3D AWS Badges */
+.clip-hexagon {
+  clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0% 50%);
+}
+
+/* Clean Subtle Blueprint Accent inside R&D Cards */
+.blueprint-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 245, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 245, 255, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
