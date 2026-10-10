@@ -2,9 +2,8 @@ import React, { useRef, useState } from 'react';
 
 /**
  * SpotlightCard
- * Implements the Phase 3 Mouse-reactive radial spotlight glow:
- * radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(0,245,255,0.15), transparent 40%)
- * Plus optional 3D perspective tilt on hover.
+ * Implements Mouse/Touch-reactive radial spotlight glow
+ * Plus optional 3D perspective tilt on hover-capable devices.
  */
 export default function SpotlightCard({
   children,
@@ -20,6 +19,9 @@ export default function SpotlightCard({
 
   const handleMouseMove = (e) => {
     if (!cardRef.current) return;
+    // Skip 3D tilt on touch-only mobile devices so scrolling feels native
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return;
+
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;

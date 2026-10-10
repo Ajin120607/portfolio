@@ -19,12 +19,23 @@ html {
   scroll-behavior: smooth;
   background-color: #020205;
   color: #f1f5f9;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background-color: #020205;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow-x: hidden;
+  width: 100%;
+}
+
+/* Hide scrollbar for horizontal mobile filter bars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom Cyber Scrollbar */
@@ -86,7 +97,7 @@ body {
   opacity: 1;
 }
 
-/* Ultra-subtle ambient finish (no noisy scanlines) */
+/* Ultra-subtle ambient finish */
 .crt-overlay {
   display: none;
 }

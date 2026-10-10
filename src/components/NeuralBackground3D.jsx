@@ -1,10 +1,9 @@
-import React, { useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 /**
  * Generates a soft radial glow texture for circular star & nebula particles
- * (eliminates harsh square WebGL points).
  */
 function createStarTexture() {
   const canvas = document.createElement('canvas');
@@ -25,18 +24,27 @@ function createStarTexture() {
 }
 
 /**
- * 3D Animated Milky Way Spiral Galaxy (Low-Opacity, Smooth 60FPS)
+ * Responsive 3D Animated Milky Way Spiral Galaxy
+ * Automatically adapts scale, camera distance, and touch/scroll parallax for mobile & desktop.
  */
-function MilkyWayGalaxy({ mouseRef }) {
+function MilkyWayGalaxy({ pointerRef, isMobile }) {
   const galaxyGroupRef = useRef();
   const galaxyPointsRef = useRef();
   const dustPointsRef = useRef();
+  const { size, camera } = useThree();
   const starTexture = useMemo(() => createStarTexture(), []);
 
-  // 1. Primary Milky Way Spiral Arms (9,500 stars)
+  // Dynamically adjust camera position for portrait mobile screens vs desktop widescreen
+  useEffect(() => {
+    const mobilePortrait = size.width < 768;
+    camera.position.set(0, mobilePortrait ? 3.0 : 2.4, mobilePortrait ? 9.4 : 7.2);
+    camera.updateProjectionMatrix();
+  }, [size.width, camera]);
+
+  // 1. Primary Milky Way Spiral Arms (Adaptive particle count for 60fps mobile GPU)
   const { positions, colors } = useMemo(() => {
-    const count = 9500;
-    const branches = 5; // 5 classic Milky Way spiral arms
+    const count = isMobile ? 5000 : 9000;
+    const branches = 5;
     const radius = 10.5;
     const spin = 1.35;
     const randomness = 0.55;
@@ -45,14 +53,13 @@ function MilkyWayGalaxy({ mouseRef }) {
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
 
-    const coreColor = new THREE.Color('#FFF4E0'); // Warm bright galactic core
-    const midColor = new THREE.Color('#00F5FF');  // Neural cyan spiral arms
-    const outerColor = new THREE.Color('#8A2BE2'); // Deep cosmic violet outer halo
-    const accentColor = new THREE.Color('#FF007F'); // Subtle magenta star clusters
+    const coreColor = new THREE.Color('#FFF4E0');
+    const midColor = new THREE.Color('#00F5FF');
+    const outerColor = new THREE.Color('#8A2BE2');
+    const accentColor = new THREE.Color('#FF007F');
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
-      // Bias slightly toward center for a realistic galactic bulge
       const r = Math.pow(Math.random(), 1.35) * radius;
       const spinAngle = r * spin;
       const branchAngle = ((i % branches) / branches) * Math.PI * 2;
@@ -66,7 +73,7 @@ function MilkyWayGalaxy({ mouseRef }) {
         Math.pow(Math.random(), randomnessPower + 0.6) *
         (Math.random() < 0.5 ? 1 : -1) *
         randomness *
-        (0.25 + r * 0.08); // Thin galactic disc
+        (0.25 + r * 0.08);
       const randomZ =
         Math.pow(Math.random(), randomnessPower) *
         (Math.random() < 0.5 ? 1 : -1) *
@@ -77,7 +84,6 @@ function MilkyWayGalaxy({ mouseRef }) {
       pos[i3 + 1] = randomY;
       pos[i3 + 2] = Math.sin(branchAngle + spinAngle) * r + randomZ;
 
-      // Smooth color interpolation from core -> spiral arms -> outer rim
       const ratio = r / radius;
       const mixedColor = coreColor.clone();
       if (ratio < 0.35) {
@@ -95,11 +101,11 @@ function MilkyWayGalaxy({ mouseRef }) {
     }
 
     return { positions: pos, colors: col };
-  }, []);
+  }, [isMobile]);
 
-  // 2. Soft Nebula Dust Cloud along the Milky Way plane (1,200 larger soft particles)
+  // 2. Soft Nebula Dust Cloud along the Milky Way plane
   const { dustPositions, dustColors } = useMemo(() => {
-    const count = 1200;
+    const count = isMobile ? 650 : 1200;
     const branches = 5;
     const radius = 9.0;
     const spin = 1.35;
@@ -130,10 +136,9 @@ function MilkyWayGalaxy({ mouseRef }) {
     }
 
     return { dustPositions: pos, dustColors: col };
-  }, []);
+  }, [isMobile]);
 
   useFrame((_, delta) => {
-    // Slow, majestic galactic rotation
     if (galaxyPointsRef.current) {
       galaxyPointsRef.current.rotation.y += delta * 0.055;
     }
@@ -141,10 +146,9 @@ function MilkyWayGalaxy({ mouseRef }) {
       dustPointsRef.current.rotation.y += delta * 0.04;
     }
 
-    // Smooth 3D tilt parallax reacting to cursor & scroll
     if (galaxyGroupRef.current) {
-      const targetRotX = 0.58 + mouseRef.current.y * 0.14;
-      const targetRotZ = -0.24 + mouseRef.current.x * 0.14;
+      const targetRotX = 0.62 + pointerRef.current.y * 0.14;
+      const targetRotZ = (size.width < 768 ? -0.38 : -0.24) + pointerRef.current.x * 0.14;
 
       galaxyGroupRef.current.rotation.x = THREE.MathUtils.lerp(
         galaxyGroupRef.current.rotation.x,
@@ -159,15 +163,19 @@ function MilkyWayGalaxy({ mouseRef }) {
     }
   });
 
+  // Scale galaxy down slightly on narrow mobile screens so the entire spiral disc fits in portrait view
+  const responsiveScale = size.width < 480 ? 0.65 : size.width < 768 ? 0.78 : 1;
+
   return (
     <group
       ref={galaxyGroupRef}
-      position={[0.4, 0.1, -1.5]}
-      rotation={[0.58, 0.1, -0.24]}
+      scale={responsiveScale}
+      position={[size.width < 768 ? 0 : 0.35, 0.1, -1.5]}
+      rotation={[0.62, 0.1, size.width < 768 ? -0.38 : -0.24]}
     >
       {/* Galactic Core Soft Halo */}
       <mesh>
-        <sphereGeometry args={[1.1, 32, 32]} />
+        <sphereGeometry args={[1.1, 24, 24]} />
         <meshBasicMaterial
           color="#00F5FF"
           transparent
@@ -177,7 +185,7 @@ function MilkyWayGalaxy({ mouseRef }) {
         />
       </mesh>
 
-      {/* Milky Way Spiral Star Particles (Low-Opacity, Crisp Circular Glow) */}
+      {/* Milky Way Spiral Star Particles */}
       <points ref={galaxyPointsRef}>
         <bufferGeometry>
           <bufferAttribute
@@ -194,7 +202,7 @@ function MilkyWayGalaxy({ mouseRef }) {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.095}
+          size={isMobile ? 0.12 : 0.095}
           map={starTexture}
           vertexColors
           transparent
@@ -222,7 +230,7 @@ function MilkyWayGalaxy({ mouseRef }) {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.38}
+          size={isMobile ? 0.42 : 0.38}
           map={starTexture}
           vertexColors
           transparent
@@ -237,25 +245,61 @@ function MilkyWayGalaxy({ mouseRef }) {
 }
 
 export default function NeuralBackground3D() {
-  const mouseRef = useRef({ x: 0, y: 0 });
+  const pointerRef = useRef({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
     const handleMouseMove = (e) => {
-      mouseRef.current = {
+      pointerRef.current = {
         x: (e.clientX / window.innerWidth) * 2 - 1,
         y: -(e.clientY / window.innerHeight) * 2 + 1
       };
     };
 
+    // Mobile Touch & Scroll Parallax so the 3D Galaxy responds on smartphones
+    const handleTouchMove = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        const touch = e.touches[0];
+        pointerRef.current = {
+          x: (touch.clientX / window.innerWidth) * 2 - 1,
+          y: -(touch.clientY / window.innerHeight) * 2 + 1
+        };
+      }
+    };
+
+    const handleScroll = () => {
+      const maxScroll = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight
+      );
+      const scrollRatio = (window.scrollY / maxScroll) * 2 - 1;
+      pointerRef.current.y = scrollRatio * 0.65;
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#020205]">
-      {/* Subtle Deep-Space Milky Way Nebula Glow */}
+    <div className="fixed inset-0 w-screen h-[100dvh] z-0 pointer-events-none overflow-hidden bg-[#020205]">
+      {/* Subtle Deep-Space Milky Way Nebula Glow (Responsive size for mobile & desktop) */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[420px] -rotate-12 rounded-full opacity-20 blur-[150px]"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[650px] lg:w-[900px] h-[260px] sm:h-[380px] -rotate-12 rounded-full opacity-20 blur-[110px] sm:blur-[150px]"
         style={{
           background:
             'linear-gradient(90deg, #00F5FF 0%, #8A2BE2 50%, #FF007F 100%)'
@@ -264,12 +308,14 @@ export default function NeuralBackground3D() {
 
       {/* 3D Animated Milky Way Spiral Galaxy Canvas */}
       <Canvas
+        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
         camera={{ position: [0, 2.4, 7.2], fov: 52 }}
         dpr={[1, 1.5]}
+        resize={{ scroll: false, debounce: { scroll: 50, resize: 50 } }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       >
-        <fog attach="fog" args={['#020205', 6, 18]} />
-        <MilkyWayGalaxy mouseRef={mouseRef} />
+        <fog attach="fog" args={['#020205', 6, 19]} />
+        <MilkyWayGalaxy pointerRef={pointerRef} isMobile={isMobile} />
       </Canvas>
 
       {/* Low-Opacity Vignette Overlay so Foreground Content Stays Crystal Clear */}
